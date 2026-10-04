@@ -1,0 +1,45 @@
+\section{Introduction}
+\label{sec:intro}
+
+A false statement from a language model has two very different origins.
+The model may not know the truth and produce a wrong answer in good faith, which is a hallucination.
+Or the model may know the truth and state something else, which is a lie.
+A monitor that cannot tell these apart is of limited use: it either raises an alarm on every honest mistake or stays silent on confident, knowing misreports.
+
+White-box deception probes are a leading proposal for such monitors.
+The standard recipe trains a linear probe on activations from contrastive ``honest'' and ``dishonest'' instructions and reports near-perfect AUROC on held-out deception datasets \citep{goldowskydill2025detecting}.
+A separate line of work builds hallucination detectors that predict answer correctness from hidden states, token probabilities, or sample consistency \citep{azaria2023internal,orgad2024llms,kossen2024semantic}.
+The two literatures rarely meet.
+Lie-detector evaluations compare lies with honest and mostly correct answers, often after filtering out the questions the model does not know \citep{kretschmar2025liars,cooney2026did}.
+Hallucination-detector evaluations contain no incentive to misreport \citep{cheang2025llms}.
+\mask separates honesty from accuracy behaviorally, but it evaluates no detector \citep{ren2025mask}.
+Among the sources we read in full, none scores a lie probe and a hallucination detector on false outputs of both kinds for the same model and the same questions.
+
+{\bf Our main question is: when one model gives false answers, how many are hallucinations and how many are lies, and do standard detectors tell the two apart?}
+A deception probe is useful as a monitor only if it responds to a mismatch between belief and statement.
+If it responds to falsehood in general, to low-knowledge states, or to the wording of the prompt, its reported accuracy overstates what it can do.
+
+We answer this question with a matched design on \llama (see \tabref{tab:cells} for the resulting cells).
+The model answers the same 3,000 \triviaqa questions under four system prompts: a neutral prompt, an incentive-only prompt in which the model wins money if the user answers wrongly, a matched control in which the truth pays, and an explicit instruction to lie.
+We label knowledge before the pressure runs, using three paraphrased neutral questions and ten samples per question.
+This gives a knowledge $\times$ incentive table of false answers.
+We then score seven transferred detectors and two in-distribution probes on contrasts that hold the prompt fixed, including the key contrast of lie versus hallucination under the same prompt.
+
+We find that the ``lie'' category nearly collapses to instructed lies for this model.
+The incentive-only prompt yields false answers on 2.9\% of known questions against 2.0\% under the matched control, a net effect of 0.9 points.
+The explicit instruction yields 34.5\%.
+The deception probe separates instructed lies from neutral correct answers at AUROC 1.00, but the same probe applied to the last prompt token, before any answer exists, also scores 1.00.
+At the usual 1\% false-positive threshold it flags 99.8\% of lies, 96.8\% of honest correct answers, and 98.6\% of hallucinations under the lie instruction.
+Within a fixed prompt, the probe does carry lie-specific signal: 0.87 against honest correct answers and 0.80 against hallucinations, compared with only 0.62 for hallucinations against honest correct answers.
+Hallucination detectors fire on both kinds of false answer.
+An in-distribution probe separates lies from hallucinations at 0.92, but a probe on the prompt token alone reaches 0.90, so most of that separation reads whether the model knows the question.
+
+In summary, our contributions are:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item We build a matched knowledge $\times$ incentive design on one model and one question pool, with a truth-pays control prompt that measures how often known answers flip to false from a prompt change alone.
+    \item We estimate the share of false answers that are knowing misreports: about 5\% to 6\% under incentive-only prompts, most of it noise, and 40\% under an explicit lie instruction.
+    \item We evaluate deception probes and hallucination detectors on the same false answers with the prompt held fixed, and show that the deception probe classifies by prompt at any fixed threshold while hallucination detectors respond to falsehood and low confidence in general.
+    \item We show with in-distribution and prompt-token probes that lies and hallucinations are linearly separable, mostly through a signal of question knowledge that exists before the answer.
+\end{itemize}
+
+We review related work in \secref{sec:related}, describe the design in \secref{sec:method}, present results in \secref{sec:results}, and discuss interpretation and limitations in \secref{sec:discussion}.

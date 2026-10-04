@@ -1,0 +1,2 @@
+# activation dumps are large (6 GB); regenerate with src/run_all.sh
+*.npz

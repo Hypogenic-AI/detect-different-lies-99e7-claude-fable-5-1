@@ -1,0 +1,15 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We crossed knowledge with incentive on matched trivia questions for \llama and scored lie detectors and hallucination detectors on the resulting false answers.
+False answers are almost entirely epistemic unless the model is told to lie: an incentive alone adds about one knowing misreport per hundred known questions, while an explicit instruction makes lies 40\% of false answers.
+The standard deception probe is dominated by the prompt at any fixed threshold.
+Within a prompt it responds more to knowing lies than to hallucinations (0.80), so it is not a general falsehood detector.
+Hallucination detectors are closer to general detectors of falsehood and low confidence: they fire on both kinds of false answer.
+Lies and hallucinations are linearly separable (0.92), mostly through a signal of question knowledge that is present before the answer.
+
+Several steps follow from these findings.
+First, we plan to repeat the design on a larger model that lies under incentive alone, so that the lie cell is not instructed.
+Second, calibrating the probe threshold per prompt, or subtracting the prompt-token score, would test whether the within-prompt signal survives as a usable detector.
+Third, a condition that asks for a different but still correct answer, such as an alias or paraphrase, would separate ``departs from the default answer'' from ``contradicts the belief''.
+Finally, a follow-up-token probe, NLI-based semantic entropy, and human validation of a sample of lie labels would tighten the detector set and the labels.

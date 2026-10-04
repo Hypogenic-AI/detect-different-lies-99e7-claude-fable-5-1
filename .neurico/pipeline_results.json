@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "stages": {
+    "resource_finder": {
+      "success": true,
+      "completion_marker": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/.resource_finder_complete",
+      "outputs": {
+        "literature_review": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/literature_review.md",
+        "resources_catalog": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/resources.md",
+        "papers_dir": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/papers",
+        "datasets_dir": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/datasets",
+        "code_dir": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/code"
+      },
+      "log_file": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/logs/resource_finder_claude.log",
+      "transcript_file": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/logs/resource_finder_claude_transcript.jsonl",
+      "elapsed_time": 630.8103020191193,
+      "background_processes_terminated": false
+    },
+    "experiment_runner": {
+      "success": true,
+      "return_code": 0,
+      "elapsed_time": 10701.572431325912,
+      "log_file": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/logs/execution_claude.log",
+      "transcript_file": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/logs/execution_claude_transcript.jsonl",
+      "background_processes_terminated": false
+    }
+  },
+  "work_dir": "/workspaces/detect-different-lies-99e7-claude-fable-5-1"
+}

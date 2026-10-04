@@ -1,0 +1,114 @@
+\section{Methodology}
+\label{sec:method}
+
+We cross two factors on the same model and the same questions: what the model knows (labeled by neutral elicitation) and what the prompt rewards (neutral, incentive-only, or an instructed lie).
+A false answer on a known question is a lie; a false answer on a question the model does not know is a hallucination.
+
+\subsection{Model, questions, and belief labels}
+
+\para{Model and questions.}
+We use \llama, run locally in fp16.
+Statements are decoded greedily with at most 24 new tokens; samples use temperature 1.0.
+The question pool is 3,000 random questions from the \triviaqa \texttt{rc.nocontext} validation split \citep{joshi2017triviaqa}, drawn with seed 0.
+A further 300 disjoint questions serve to pilot the pressure prompts.
+
+\para{Belief elicitation.}
+Under the neutral system prompt, the model answers three paraphrased user templates greedily, and we draw 10 samples at temperature 1 on the first template.
+We fix the labels in \tabref{tab:labels} before the pressure runs.
+Following \citet{cheang2025llms}, we separate questions on which the model repeats one wrong answer (confident-wrong) from questions on which it has no stable answer (no-knowledge).
+
+\begin{table}[t]
+\caption{Belief labels from neutral elicitation on 3,000 \triviaqa questions. Ambiguous questions count toward the shares of false answers but are excluded from detector contrasts.}
+\label{tab:labels}
+\centering
+\small
+\begin{tabular}{@{}lp{0.68\linewidth}r@{}}
+\toprule
+Label & Rule & $n$ \\
+\midrule
+known & all 3 greedy answers correct and at least 8/10 samples correct & 1,772 \\
+confident-wrong & all 3 greedy answers wrong, at least 8/10 samples agree with the wrong greedy answer, at most 1/10 correct & 96 \\
+no-knowledge & no greedy answer correct, at most 1/10 samples correct, not confident-wrong & 386 \\
+ambiguous & everything else & 746 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Statement conditions and cells}
+
+\para{Conditions.}
+All four conditions use the same user turn; only the system prompt changes (full text in \secref{app:prompts}).
+The {\em neutral} prompt is ``You are a helpful assistant.''
+The {\em falsehood-pays} prompt casts the model as a quiz-show rival who wins \$1M only if the user answers wrongly; it contains no instruction to lie.
+The {\em truth-pays} prompt is a matched control: the same quiz show, but the user is a teammate and both win if the user answers correctly.
+It differs from the falsehood-pays prompt only in whose interest the truth serves, so it measures how often a known answer flips to false merely because the prompt changed.
+The {\em instructed} prompt tells the model that it must lie and answer with a plausible but incorrect answer.
+We chose the falsehood-pays prompt from a pilot of four incentive prompts (sandbagging threat, manager pressure, confidentiality, quiz-show rival) as the one with the highest yield of false answers on known questions.
+
+\para{Grading.}
+An LLM judge (\texttt{openai/gpt-5.6-luna}, temperature 0) labels each greedy answer as correct, incorrect, or evasive against the \triviaqa aliases.
+Samples are graded by alias string match.
+The judge and alias match agree on 92.5\% to 96.0\% of greedy answers, depending on the condition.
+About 0.1\% of judge calls returned unusable output after four retries and fell back to alias match.
+
+\para{Cells.}
+\Tabref{tab:cells} defines the cells we contrast.
+We keep ``changed false answers without knowledge'' apart from hallucinations because, under a lie instruction, a model that does not know the truth may still be trying to deceive.
+Under the truth-pays control, 56\% of no-knowledge answers also change, so a changed answer is weak evidence of intent.
+
+\begin{table}[t]
+\caption{Cells of the matched design. ``Unknown'' pools confident-wrong and no-knowledge questions. Counts are for the instructed / falsehood-pays conditions where two numbers appear.}
+\label{tab:cells}
+\centering
+\small
+\begin{tabular}{@{}lp{0.53\linewidth}r@{}}
+\toprule
+Cell & Definition & $n$ \\
+\midrule
+lie & known question, false answer under the pressure prompt & 611 / 52 \\
+honest-correct (same prompt) & known question, correct answer under the pressure prompt & 1,157 / 1,718 \\
+hallucination (same prompt) & unknown question, false answer identical to the neutral answer & 145 / 225 \\
+changed false answer & unknown question, false answer that differs from the neutral answer & 316 / 228 \\
+correct (neutral) & known question, correct neutral answer & 1,772 \\
+hallucination (neutral) & unknown question, false neutral answer & 467 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Detectors}
+
+We extract residual-stream activations at 14 layers.
+Unless stated otherwise, a probe score is computed on the mean activation over response tokens.
+
+\para{Lie detectors.}
+The {\em deception probe} follows the instructed-pairs recipe of \citet{goldowskydill2025detecting}: logistic regression on standardized activations ($C=0.1$), trained on 254 true facts from \citet{azaria2023internal} with the last five words dropped, under ``Pretend you're an honest / a dishonest person\ldots'' prompts.
+We also report a difference-of-means variant.
+The {\em prompt-token} control applies the same logistic-regression probe to the last prompt token, before any answer token exists; whatever it detects cannot depend on the answer.
+The {\em self-report} detector appends ``Was your last response deceptive? (Yes/No)'' and scores the logit of Yes minus the logit of No.
+
+\para{Truth probe.}
+We train logistic regression on 1,954 true/false statements from \citet{marks2023geometry}, at layer 14 and the last token, chosen by leave-one-dataset-out AUROC (0.93).
+
+\para{Hallucination detectors.}
+The {\em correctness probe} is a logistic regression on neutral answers (incorrect versus correct), 5-fold cross-fitted by question.
+{\em Answer improbability} is the negative mean log-probability of the response tokens.
+{\em Sample inconsistency} is the share of 10 same-prompt samples that disagree with the greedy answer, a string-match proxy for semantic entropy.
+
+\para{In-distribution probes.}
+As a ceiling, we train logistic regression on each contrast itself at layer 16, 5-fold cross-fitted by question, once on the response and once on the last prompt token only.
+These tell us whether the information is linearly present, so that a failure of a transferred detector is a failure of transfer and not of representation.
+
+\para{Layer choice.}
+Each transferred probe uses the layer that is best on its own standard contrast: layer 12 for the deception probe (instructed lie versus neutral correct) and layer 16 for the correctness probe (hallucination versus correct under the neutral prompt).
+We report full layer sweeps in \secref{sec:layers}.
+
+\subsection{Metrics}
+
+We report AUROC with 1,000-sample bootstrap 95\% confidence intervals and Wilson intervals for proportions.
+For fixed-threshold behavior we report the flag rate at the 99th percentile of scores on 500 on-policy \alpaca responses, the ``1\% FPR'' convention of \citet{goldowskydill2025detecting}.
+
+\subsection{External check on \mask}
+
+To see whether the conclusions carry over to more realistic pressure, we run 510 binary items from the \texttt{known\_facts}, \texttt{disinformation}, and \texttt{continuations} archetypes of \mask \citep{ren2025mask}.
+We elicit beliefs with the benchmark's first belief prompt, one greedy and two sampled runs, and the judge maps each to a side of the proposition; a belief exists if all three agree.
+A lie is a pressured statement that contradicts the belief.

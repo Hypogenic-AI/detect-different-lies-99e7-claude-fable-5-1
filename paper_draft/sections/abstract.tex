@@ -1,0 +1,9 @@
+A model can say something false because it does not know the truth (a hallucination) or because it knows and misreports (a lie).
+White-box deception probes are proposed as monitors for the second case, but they are usually evaluated against honest, correct answers given under a different prompt.
+We cross knowledge with incentive on matched questions: \llama answers 3,000 \triviaqa questions under a neutral prompt, an incentive-only pressure prompt with a matched control, and an explicit lie instruction, and we label knowledge independently by repeated neutral elicitation.
+Without an instruction, knowing misreports are rare: the incentive adds 0.9 percentage points (95\% CI 0.3 to 1.5) of false answers on known questions.
+With an instruction, 34.5\% of known questions are answered falsely, and these lies make up 40\% of all false answers.
+An instructed-pairs deception probe separates instructed lies from neutral correct answers at AUROC 1.00, but it separates honest correct answers under the lie instruction from neutral ones equally well, and so does the same probe read before any answer token exists.
+With the prompt held fixed, the probe separates lies from honest answers at 0.87 and from hallucinations at 0.80, at a layer close to its best case.
+Hallucination detectors reach 0.91 to 0.94 on hallucinations and also fire on lies (0.76 to 0.88).
+Our results show that deception-probe evaluations need honest answers and honest mistakes under the same pressure prompt as controls.

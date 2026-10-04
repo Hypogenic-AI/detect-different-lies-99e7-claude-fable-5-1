@@ -1,0 +1,59 @@
+\section{Discussion}
+\label{sec:discussion}
+
+{\bf What share of false statements are lies?}
+For this model on trivia, false answers without an explicit lie instruction are epistemic.
+Knowing misreports are 5\% to 6\% of false answers under either quiz-show prompt, and most of that is the noise floor that the control measures.
+Only an explicit instruction moves a large share (40\%) into the knowing-misreport cell.
+On \mask's role-play pressure prompts the balance reverses, but those prompts largely tell the model what to assert, which is the instructed case that prior work already criticizes.
+
+{\bf Does the deception probe respond to falsehood or uncertainty in general?}
+Not much.
+Under the neutral prompt it flags 0.4\% of hallucinations and separates them from correct answers at 0.61.
+Under a fixed lie prompt, hallucinations sit close to honest correct answers (0.62) and well below lies (0.80).
+Our data do not support the hypothesis that the probe is a falsehood detector.
+
+{\bf Does it respond to a mismatch between belief and statement?}
+Partly, and only relative to a prompt-specific baseline.
+The score shifts with the system prompt far more than it shifts between lies and honest answers within a prompt, so a single threshold classifies by prompt.
+The within-prompt signal (0.87) also has competing explanations that we do not rule out: lies depart from the model's default answer and are lower-probability continuations, and answer improbability alone reaches 0.84 on the same contrast.
+Response length (0.65) and trailing punctuation (0.48) do not explain it.
+
+{\bf How should we read the changed answers on unknown questions?}
+The probe separates knowing lies from changed false answers on unknown questions only weakly (0.67).
+If those changed answers are attempted lies, a mismatch detector should score them like lies, and the low AUROC is the right behavior.
+If they are ordinary re-guesses, it is a failure.
+Our data cannot distinguish these readings.
+
+{\bf What do hallucination detectors report on lies?}
+They do what they are built for under the neutral prompt and they also fire on lies.
+Sample inconsistency is high for lies because the model samples among several false alternatives, which is not epistemic uncertainty.
+A hallucination monitor would thus report knowing lies as ``uncertain'' answers.
+Its scores also move with the prompt: honest correct answers under the lie instruction look less certain than neutral correct answers (contrast f: 0.80 for the correctness probe), and hallucination versus honest-correct drops from 0.94 under the neutral prompt to 0.84 under the lie instruction.
+
+{\bf What separates the two?}
+The in-distribution probe reaches 0.92 for lie versus hallucination and 0.90 from the prompt token alone.
+This agrees with \citet{cheang2025llms}: hidden states encode whether the model can recall the answer.
+The easiest way to tell a lie from a hallucination is to read knowledge of the question, not anything about the act of lying.
+
+\para{Relation to prior work.}
+The prompt-driven shift matches the note of \citet{goldowskydill2025detecting} that their probe fires on honest text in deception-related contexts, and the finding of \citet{natarajan2026one} that the prompt pair drives probe performance.
+The \mask transfer figure (0.75, with 0.70 available from the prompt) is in the range that \citet{kretschmar2025liars} report for off-the-shelf probes.
+The truth probe's failure under prompt shift is in line with the caution of \citet{thormann2026probing}.
+
+\para{Implications.}
+A reported deception-probe AUROC against honest answers under a different prompt says little about lie detection.
+Evaluations need two controls under the same pressure prompt: honest correct answers and honest mistakes.
+On this model, the two detector families are complementary, but neither is a belief-statement mismatch detector at a fixed threshold.
+
+\para{Limitations.}
+Our study covers one 8B model, one question pool, short answers, and one run; the belief and consistency samples were drawn once.
+The lies we analyze are instructed lies: the incentive-only condition gives about 16 attributable lies, so nothing here speaks to spontaneous or strategic deception.
+The main run uses one incentive prompt, selected from a four-prompt pilot on a criterion that turned out to be dominated by noise; other incentives may behave differently.
+The deception probe's layer was chosen on a saturated contrast and happens to be the best layer for the within-prompt contrast; other layers give 0.52 to 0.82.
+We deviate from the original probe recipe: we train on per-example mean activations and not per token, cap \alpaca responses at 64 tokens, and apply the probe to answers of a few tokens, unlike the long transcripts it was designed for.
+We present truth-probe statements as assistant turns in chat format, not as raw text.
+Sample inconsistency is a string-match proxy for semantic entropy.
+Belief labels are noisy: 25\% of questions are ambiguous and excluded from detector contrasts, the confident-wrong class (96 questions) is too small to analyze separately, and the judge and alias match disagree on 4\% to 8\% of answers, so some ``lies'' are grading artifacts (for example ``Architecture'' for ``Architect'').
+The same-prompt hallucination cell requires the answer to match the neutral answer, which selects questions with stable wrong guesses (145 of 461 under instruction).
+The \mask check uses three of six archetypes, binary propositions only, an LLM judge without human validation, and only 79 honest items.

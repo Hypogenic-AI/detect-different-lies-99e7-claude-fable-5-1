@@ -1,0 +1,96 @@
+{
+  "created_at": "2026-10-04T07:14:57.126790Z",
+  "stages": {
+    "resource_finder": {
+      "status": "completed",
+      "started_at": "2026-10-04T07:14:57.150614Z",
+      "completed_at": "2026-10-04T07:25:27.985177Z",
+      "success": true,
+      "outputs": {
+        "literature_review": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/literature_review.md",
+        "resources_catalog": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/resources.md",
+        "papers_dir": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/papers",
+        "datasets_dir": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/datasets",
+        "code_dir": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/code"
+      },
+      "expected_outputs": [
+        "literature_review.md",
+        "resources.md"
+      ],
+      "next_steps": [
+        "Review the literature and resource catalog before running experiments."
+      ],
+      "workspace_check": {
+        "root": "/workspaces/detect-different-lies-99e7-claude-fable-5-1",
+        "exists": true,
+        "is_directory": true,
+        "healthy": true
+      },
+      "workspace_check_at_completion": {
+        "root": "/workspaces/detect-different-lies-99e7-claude-fable-5-1",
+        "exists": true,
+        "is_directory": true,
+        "healthy": true
+      },
+      "output_validation": {
+        "valid": true,
+        "expected": [
+          "literature_review.md",
+          "resources.md"
+        ],
+        "present": [
+          "literature_review.md",
+          "resources.md"
+        ],
+        "missing": [],
+        "outside_workspace": []
+      }
+    },
+    "experiment_runner": {
+      "status": "completed",
+      "started_at": "2026-10-04T07:25:28.006880Z",
+      "completed_at": "2026-10-04T10:23:49.620695Z",
+      "success": true,
+      "outputs": {
+        "success": true,
+        "return_code": 0,
+        "elapsed_time": 10701.572431325912,
+        "log_file": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/logs/execution_claude.log",
+        "transcript_file": "/workspaces/detect-different-lies-99e7-claude-fable-5-1/logs/execution_claude_transcript.jsonl",
+        "background_processes_terminated": false
+      },
+      "expected_outputs": [
+        "REPORT.md"
+      ],
+      "next_steps": [
+        "Validate the report and experimental artifacts before finalizing."
+      ],
+      "workspace_check": {
+        "root": "/workspaces/detect-different-lies-99e7-claude-fable-5-1",
+        "exists": true,
+        "is_directory": true,
+        "healthy": true
+      },
+      "workspace_check_at_completion": {
+        "root": "/workspaces/detect-different-lies-99e7-claude-fable-5-1",
+        "exists": true,
+        "is_directory": true,
+        "healthy": true
+      },
+      "output_validation": {
+        "valid": true,
+        "expected": [
+          "REPORT.md"
+        ],
+        "present": [
+          "REPORT.md"
+        ],
+        "missing": [],
+        "outside_workspace": []
+      }
+    }
+  },
+  "current_stage": null,
+  "completed": true,
+  "completed_at": "2026-10-04T10:23:49.647059Z"
+}

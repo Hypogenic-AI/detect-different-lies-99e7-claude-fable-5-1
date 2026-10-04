@@ -1,0 +1,936 @@
+
+=== PAGE 1 ===
+1–22
+Asymmetries in Spontaneous and Instructed Deception
+Josiah Luikhamjosiah.luikham@gmail.com
+Independent Researcher
+Abstract
+Large language models sometimes deceive users without being instructed to. However,
+much of the study on deception in models involves instructed deception. We investigated
+the relationship between instructed and spontaneous (uninstructed) deception in Llama-
+3.1-70B-Instruct. We compared these two deception settings through direction geometry,
+cross-setting classifiers, and cross-setting steering. We found the two deception settings
+share a component of direction (cosine of approximately 0.5) and an asymmetry in the
+transfer between settings regarding detection and causation. Spontaneous trained classifiers
+performed better on instructed data than vice versa, and instructed derived directions
+performed better at steering spontaneous prompts than vice versa. Likewise the best token
+position to derive steering vectors from differed from the best token position to train and
+apply classifiers.
+1. Introduction
+Large language models sometimes produce deceptive output when interacting with users (Park
+et al., 2023). This raises many practical and safety concerns for the use of LLMs in serious
+settings. Understanding the nature of deception in LLMs and how it may be mitigated is
+therefore a matter of great importance.
+In a deployed environment, when an LLM deceives, it deceives spontaneously without
+an instruction to do so. Therefore the study of spontaneous deception is most relevant
+to real world concerns. However, much existing work is focused on instructed deception.
+Some prior work has studied the relationship between instructed and spontaneous decep-
+tion. Goldowsky-Dill et al. (2025) studied the generalization of probes trained on instructed
+deception to spontaneous deception. Following this, we investigated the full symmetry be-
+tween spontaneous and instructed deception in Llama-3.1-70B-Instruct (Grattafiori et al.,
+2024). We tested how well classifiers trained on both instructed and spontaneous deception
+generalized to the other setting. Moreover, we explored whether the relationship between
+spontaneous and instructed deception is only correlational or if it is causal as well through
+direction steering. We also considered type level deception (fabrication and omission) in-
+stead of just binary deception/honesty.
+We created datasets of instructed and spontaneous deception prompts and model re-
+sponses. Using these, we investigated the transfer of classifiers trained and applied between
+settings, the transfer of directional steering between settings, and the geometry of the setting
+deception directions compared with each other.
+We found the following results:
+•A shared deception component across settings.The setting deception direc-
+tions computed from the model’s response tokens shared a cosine of approximately
+0.5 compared to chance 0.011.
+©J. Luikham.
+arXiv:2609.00180v1  [cs.AI]  31 Aug 2026
+
+=== PAGE 2 ===
+Luikham
+•Detection transfers asymmetrically .We found that probes trained on sponta-
+neous deception achieve near ceiling accuracy when applied to instructed deception.
+Instructed deception trained probes did not perform as well between settings.
+•Causal Directions transfer, but asymmetrically .We found that steering one
+setting’s prompts with directions derived from the other setting does suppress and
+induce deception, although instructed directions perform best.
+•Read in, W rite out token asymmetry .We found a difference in the most effective
+token positions for probe training and for deriving steering directions. Response tokens
+generally performed best both for training and applying probes, but the last prompt
+token was the best place to derive steering vectors from.
+2. Related Work
+Generalization of deception probesGoldowsky-Dill et al. (2025) trained probes on the
+internal states of models instructed to be deceptive or honest and tested those probes in
+scenarios where the model would deceived spontaneously (insider trading etc.). We trained
+probes on instructed and spontaneous deception activations, and tested the generalization
+between the two settings. We also probed and steered for type level deception (fabrication,
+omission) in our experiments.
+Deception type representationsNatarajan et al. (2026) showed that different types
+of deception can have different representations in a model, although some forms of decep-
+tion overlap heavily. We also investigate type level deception, specifically fabrication and
+omission.
+Causation vs detectionGaleone et al. (2026) found that the direction which repre-
+sented a model’s recognition/knowledge of a subject was orthogonal to its refusal to answer
+questions regarding that subject. We also found dissociations between detection and control
+for deception.
+3. Setup and methods
+We generated datasets of prompts to test instructed and spontaneous deception. All Sys-
+tem Prompts contained a scenario and a ground truth fact and all user prompts asked
+a question related to the ground truth. The instructed deception prompts contained an
+instruction to behave honestly or deceptively(according to omission or fabrication). The
+spontaneous deception prompts included an incentive to deceive in the scenario, split into
+omission and fabrication elicitation lists. Our definitions of fabrication and omission and
+objects/audiences of deception in scenarios followed the taxonomy of Shi et al. (2026). The
+prompts were used to generate responses from the model and these were appended and
+saved for downstream experiments. Spontaneous responses were divided into deceptive and
+honest lists based on assessment of their content by an LLM judge.
+We trained logistic regression probes (Alain and Bengio, 2018) on the teacher forced
+activations of the prompt and response datasets to distinguish honest responses from de-
+ceptive responses binarily as well as by deception type (fabrication, omission). The probes
+were trained over various layers at the last prompt token or response tokens. They were
+2
+
+=== PAGE 3 ===
+Spontaneous vs. Instructed Deception
+then applied to the teacher forced activations of a held out portion of the datasets at the
+same layers and last prompt token or response tokens.
+We computed mass mean difference directions (Li et al., 2024) for deception from the
+spontaneous and instructed prompt/response datasets and used them to generate new re-
+sponses from the prompts. Directions were derived from the last prompt token and the
+response tokens over layers 19-32. The normalized directions were then applied with coef-
+ficients of up to|1.5|at layers 19-32 over all tokens at generation time. We also performed
+response generation with random direction steering as a control.
+Relatively few deceptive fabrication responses were elicited at baseline(without steering)
+with prompts in the spontaneous dataset, so we implemented additional tests to measure
+suppression steering effectiveness in this case. Of prompts which produced fabricative re-
+sponses at baseline, we recorded which produced honest responses under fabrication sup-
+pression steering and under random steering. Flip rates from fabricative to honest were
+recorded with Wilson 95 percent intervals (Wilson, 1927) and the difference between the
+real and random-direction flip rates were recorded with Newcombe 95 percent intervals built
+from the Wilson intervals (Newcombe, 1998).
+Response labeling and response deception ratings were performed by a GPT-4.1 Mini
+Judge. Spontaneous Prompt/Response pairs used for direction extraction and probe train-
+ing/application were labeled as honest, fabricative, or omissive through a judgement/filtration
+pipeline (Appendix A). Instructed Prompt/Response pairs used for direction extraction and
+probe training/application were labeled based on their system prompt instruction. Steered
+and baseline responses of both datasets were scored on a 0-100 scale for fabrication and
+omission as well as coherence.
+To validate the LLM Judge, we hand labeled 120 responses using only the resources
+available to the judge during its rating. The samples were stratified to contain diverse
+deception scores and steering levels. We found the human rater and LLM Judge agreed rea-
+sonably well. Binary fabrication ratings(responses rated with trait≥50) agreed 85 percent
+of the time. Binary omission ratings agreed 82 percent of the time. Full documentation of
+the judge validation is available in (Appendix B).
+4. Results
+Train→eval Balanced acc. Retention AUROC
+instructed→instructed (response) 1.000(ceiling)1.000
+spontaneous→instructed (response) 0.980 0.980 0.999±0.000
+spontaneous→spontaneous (response) 0.934±0.019(ceiling)0.981±0.008
+instructed (prompt)→spontaneous (response) 0.893±0.021 0.956 0.918±0.024
+spontaneous→spontaneous (prompt) 0.530±0.009(ceiling)0.604±0.005
+Table 1: Binary (honest vs. deceptive) probe results at layer 35. Values are mean±half-
+range over seeds 42,43, and 44. Bold rows are within-setting diagonals. Retention
+refers to the off-diagonal balanced accuracy divided by the diagonal of the same
+eval set.
+3
+
+=== PAGE 4 ===
+Luikham
+We found that binary and type level deception probes performed best at layer 35 and
+succeeded asymmetrically in transfer between datasets. Probes trained on spontaneous re-
+sponse token activations and applied over instructed response token activations performed
+the best of our between setting probes, achieving near ceiling accuracy. Instructed trained
+binary probes applied to the spontaneous setting achieved their best scores when trained at
+the last prompt token and applied over the response tokens, but failed to match their sponta-
+neous trained counterparts. Instructed trained type level probes applied to the spontaneous
+setting failed to achieve better than chance. Interestingly, we found that spontaneous ac-
+tivation trained probes applied within setting at the last prompt token failed to achieve
+good scores, indicating a lack of spontaneous deception signal at this point. Binary probe
+transfer results are given in Table 1. Type level probe results are given in Table 2.
+Per-class accuracy
+Train→eval Fabrication Omission Honest
+instructed→instructed1.000 1.000 1.000
+spontaneous→instructed 1.000 0.920 0.940
+spontaneous→spontaneous0.925 0.771±0.052 0.945±0.007
+instructed→spontaneous 0.164 0.393±0.022 0.995±0.007
+Table 2: Type-level (fabrication/omission/honest) classification results at layer 35 for re-
+sponse trained probes applied at response tokens. Values are mean±half-range
+over seed 42, 43, and 44. Bold rows are within-setting diagonals. Retention refers
+to the off-diagonal balanced accuracy divided by the diagonal of the same eval set.
+layer 20 layer 35
+0.0
+0.2
+0.4
+0.6cosine similarity
+response tokens
+layer 20 layer 35
+last prompt token
+fabrication
+omission
+setting axis projected out
+chance |cos| = 0.011
+Figure 1: The cosine similarity between deception directions derived from activations in the
+spontaneous and instructed scenarios.
+To determine the alignment of the spontaneous and instructed deception directions, we
+computed their cosine. The charted geometry can be seen in Figure 1. The cosine between
+the setting deception directions at layer 35 over the response tokens was 0.519 and 0.435
+for fabrication and omission respectively versus chance 0.011. When the setting direction
+was projected out of the deception directions their cosine increased. The cosine between
+4
+
+=== PAGE 5 ===
+Spontaneous vs. Instructed Deception
+the spontaneous and instructed directions at the last prompt token was much lower, with
+0.052 and 0.008 at layer 35 for fabrication and omission respectively.
+instructed direction spontaneous direction
+Prompts Mech. Base−1.0 +1.0−1.0 +1.0
+spontaneous prompts fabrication 6.2 1.3 84.8 3.6 45.9
+omission 49.7 17.4 75.5 14.0 87.8
+instructed prompts fabrication 0.0 / 92.8 6.9 78.3 37.8 22.4
+omission 1.1 / 80.2 14.3 82.1 40.2 80.9
+Table 3: Judge deception scores under steering layers 19-32 for last prompt token derived
+directions. Instructed prompts steered with positive vectors are the honest in-
+structed prompts steered with a deceptive direction. The base column for in-
+structed prompts shows (baseline deception for honest instructed prompts) / (base-
+line deception for deception instructed prompts).
+We steered the model by applying the deception directions of each setting to the residual
+stream of the model under prompts from the other setting. Steering results are displayed
+in Table 3 and Figure 7. We achieved the best deception induction and suppression results
+with last prompt token derived directions and coefficients of magnitude|1.0|. Steering with
+coefficients of magnitude greater the|1.0|produced large levels of perplexity on WikiText-
+2 (Merity et al., 2016) and degraded coherence ratings. Instructed directions generally
+outperformed their spontaneous counterparts.
+-1.5 -1 -0.5
+steering coefficient (suppression)
+0
+20
+40
+60
+80
+100scenarios flipped (%)
+instructed-derived direction
+-1.5 -1 -0.5
+steering coefficient (suppression)
+spontaneous-derived direction
+prompt-derived
+response-derived
+random-direction mean (6 draws)
+not significant vs random mean
+Figure 2: The flip rates under negative steering(with directions derived from the last prompt
+token) of spontaneous scenarios with responses scoring≥50 on deception at base-
+line. Bars show the percentage of scenarios with deceptive responses at baseline
+which flipped to honest (score<50) under negative steering. The horizontal
+black bar shows the mean percentage of flips under steering by 6 random direc-
+tions.
+Due to the low baseline elicitation of spontaneous fabrication, we pursued a further met-
+ric to determine whether fabrication was meaningfully suppressed under negative steering
+5
+
+=== PAGE 6 ===
+Luikham
+with spontaneous and instructed deception directions. We determined the baseline sponta-
+neous fabrication scenarios which received fabrication scores of≥50, and determined how
+many of those flipped to a score of<50 after steering. Steering with instructed and spon-
+taneous fabrication directions derived from the last prompt token at a coefficient of -1.0
+produced a flip rate of 96.55 percent and 86.2 percent respectively. Steering with random
+direction vectors at the same coefficient produced a mean flip rate of 35 percent. Results
+of the flip analysis are displayed in Figure 2.
+5. Discussion
+Our findings support the claim that spontaneous and instructed deception share substan-
+tial components in their representation in Llama-3.1-70B-Instruct. Deception directions ex-
+tracted over response tokens of both settings had a cosines of 0.519 and 0.435 for fabrication
+and omission respectively at layer 35, compared to a chance cosine of 0.011. Following Marks
+and Tegmark (2024), we interpret this cosine alignment as evidence of a shared component.
+Likewise, probes transferred between spontaneous and instructed datasets, achieving near
+ceiling accuracy in the case of spontaneous to instructed transfer, although instructed to
+spontaneous transfer performed with lower accuracy. Steering directions were also able to
+induce and suppress deceptive effects between spontaneous and instructed prompts.
+We found an asymmetry in the effectiveness of between setting probes and between set-
+ting steering. Spontaneous trained probes transferred better than their instructed trained
+counterparts, whereas instructed derived directions transferred better than their sponta-
+neous derived counterparts. One possible explanation for the probing asymmetry is that
+because spontaneous deception holds more subtle and difficult to detect traces in the model’s
+representation, probes trained on it generalize better to other settings. The advantage of
+spontaneous probes could also be due to the fact that they were trained against noisier
+labels. Spontaneous deception scenarios were labeled as honest or deceptive by a judge,
+whereas instructed deception scenarios were labeled by the conditions of the prompt. This
+may have lessened reliance on features specific to the setting. Regarding the steering ef-
+fectiveness asymmetry, it is possible that because instructed deception is more explicit and
+loud in the models representation, directions extracted from it produce more dramatic ef-
+fects when used in steering.
+We also found that directions derived from the last prompt token performed better for
+steering, whereas probes trained on response tokens mostly performed better for probing.
+Most strikingly, almost no linearly decodable deception signal could be found in the spon-
+taneous dataset at the last prompt token under probing, despite the superior effectiveness
+of directions derived from that point in steering. This asymmetry suggests that the token
+positions best for deception detection and those best for deception intervention come apart.
+Galeone et al. (2026) found a similar result regarding model hallucination. Their results
+found that a direction which detects whether a model knows or does not know about a
+subject is different from the direction which causes the model to refuse to answer questions
+about the subject.
+6
+
+=== PAGE 7 ===
+Spontaneous vs. Instructed Deception
+6. Limitations
+Our experiments were restricted to only studying Llama-3.1-70B-Instruct. We cannot say
+whether the results would hold for other models under the same experiments.
+Our prompts and scenarios were generated by GPT-5 mini. Their realism is not con-
+firmed. Likewise, the elicitation rates of spontaneous deception is dependent on the quality
+of the scenarios, under other scenarios spontaneous deception rates might have differed.
+Our analysis of spontaneous fabrication suppression used a small number of scenarios
+due to the small baseline elicitation of the model. Confidence intervals on the scenario flip
+rates from fabricative to honest under suppression steering are therefore wide, although the
+difference from the random steering control is large.
+Deception and honesty were rated by a judge LLM, GPT-4.1 Mini. While agreement
+between human rating and the judge LLM was found to be favorable, it was not perfect.
+In some cases the judge rated omission higher than the human did simply because every
+detail of the ground truth was not explicitly contained in the response, despite all details
+necessary for the user’s query being present. The judge also sometimes treated deception
+types as exclusive, rating a response as only fabricative when both fabrication and omission
+were present.
+Only results for deception as omission and as fabrication were reported in our experi-
+ments. Originally, deception as distortion was also planned to be studied, but we had diffi-
+culty producing examples of spontaneous distortion responses. Beyond distortion, omission,
+and fabrication, further deception varieties are possible future areas of study.
+Acknowledgments
+We thank Sing Hieng Wong for access to the scenario-generation notebook this paper’s
+dataset generation pipeline was adapted from. We thank NDIF (Fiotto-Kaufman et al.,
+2025) for access to their hosted models to run our experiments.
+References
+Guillaume Alain and Yoshua Bengio. Understanding intermediate layers using linear clas-
+sifier probes, 2018. URLhttps://arxiv.org/abs/1610.01644.
+Jacob Cohen. A coefficient of agreement for nominal scales.Educational and psychological
+measurement, 20(1):37–46, 1960.
+Jacob Cohen. Weighted kappa: Nominal scale agreement provision for scaled disagreement
+or partial credit.Psychological bulletin, 70(4):213, 1968.
+Jaden Fiotto-Kaufman, Alexander R. Loftus, Eric Todd, Jannik Brinkmann, Koyena Pal,
+Dmitrii Troitskii, Michael Ripa, Adam Belfki, Can Rager, Caden Juang, Aaron Mueller,
+Samuel Marks, Arnab Sen Sharma, Francesca Lucchetti, Nikhil Prakash, Carla Brod-
+ley, Arjun Guha, Jonathan Bell, Byron C. Wallace, and David Bau. Nnsight and
+ndif: Democratizing access to open-weight foundation model internals, 2025. URL
+https://arxiv.org/abs/2407.14561.
+7
+
+=== PAGE 8 ===
+Luikham
+Cosimo Galeone, Anna Ettorre, Minsu Park, Giuseppe Ettorre, and Daniele Ligorio. Perfect
+detection, failed control: The geometry of knowing vs. steering in language models, 2026.
+URLhttps://arxiv.org/abs/2606.24952.
+Nicholas Goldowsky-Dill, Bilal Chughtai, Stefan Heimersheim, and Marius Hobbhahn. De-
+tecting strategic deception using linear probes, 2025. URLhttps://arxiv.org/abs/25
+02.03407.
+Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey, Abhishek Ka-
+dian, Ahmad Al-Dahle, Aiesha Letman, Akhil Mathur, Alan Schelten, Alex Vaughan,
+Amy Yang, Angela Fan, Anirudh Goyal, Anthony Hartshorn, Aobo Yang, Archi Mitra,
+Archie Sravankumar, Artem Korenev, Arthur Hinsvark, Arun Rao, Aston Zhang, Aure-
+lien Rodriguez, Austen Gregerson, Ava Spataru, Baptiste Roziere, Bethany Biron, Binh
+Tang, Bobbie Chern, Charlotte Caucheteux, Chaya Nayak, Chloe Bi, Chris Marra, Chris
+McConnell, Christian Keller, Christophe Touret, Chunyang Wu, Corinne Wong, Cris-
+tian Canton Ferrer, Cyrus Nikolaidis, Damien Allonsius, Daniel Song, Danielle Pintz,
+Danny Livshits, Danny Wyatt, David Esiobu, Dhruv Choudhary, Dhruv Mahajan, Diego
+Garcia-Olano, Diego Perino, Dieuwke Hupkes, Egor Lakomkin, Ehab AlBadawy, Elina
+Lobanova, Emily Dinan, Eric Michael Smith, Filip Radenovic, Francisco Guzm´ an, Frank
+Zhang, Gabriel Synnaeve, Gabrielle Lee, Georgia Lewis Anderson, Govind Thattai,
+Graeme Nail, Gregoire Mialon, Guan Pang, Guillem Cucurell, Hailey Nguyen, Hannah
+Korevaar, Hu Xu, Hugo Touvron, Iliyan Zarov, Imanol Arrieta Ibarra, Isabel Kloumann,
+Ishan Misra, Ivan Evtimov, Jack Zhang, Jade Copet, Jaewon Lee, Jan Geffert, Jana
+Vranes, Jason Park, Jay Mahadeokar, Jeet Shah, Jelmer van der Linde, Jennifer Bil-
+lock, Jenny Hong, Jenya Lee, Jeremy Fu, Jianfeng Chi, Jianyu Huang, Jiawen Liu, Jie
+Wang, Jiecao Yu, Joanna Bitton, Joe Spisak, Jongsoo Park, Joseph Rocca, Joshua John-
+stun, Joshua Saxe, Junteng Jia, Kalyan Vasuden Alwala, Karthik Prasad, Kartikeya
+Upasani, Kate Plawiak, Ke Li, Kenneth Heafield, Kevin Stone, Khalid El-Arini, Krithika
+Iyer, Kshitiz Malik, Kuenley Chiu, Kunal Bhalla, Kushal Lakhotia, Lauren Rantala-
+Yeary, Laurens van der Maaten, Lawrence Chen, Liang Tan, Liz Jenkins, Louis Martin,
+Lovish Madaan, Lubo Malo, Lukas Blecher, Lukas Landzaat, Luke de Oliveira, Made-
+line Muzzi, Mahesh Pasupuleti, Mannat Singh, Manohar Paluri, Marcin Kardas, Maria
+Tsimpoukelli, Mathew Oldham, Mathieu Rita, Maya Pavlova, Melanie Kambadur, Mike
+Lewis, Min Si, Mitesh Kumar Singh, Mona Hassan, Naman Goyal, Narjes Torabi, Niko-
+lay Bashlykov, Nikolay Bogoychev, Niladri Chatterji, Ning Zhang, Olivier Duchenne,
+Onur C ¸ elebi, Patrick Alrassy, Pengchuan Zhang, Pengwei Li, Petar Vasic, Peter Weng,
+Prajjwal Bhargava, Pratik Dubal, Praveen Krishnan, Punit Singh Koura, Puxin Xu,
+Qing He, Qingxiao Dong, Ragavan Srinivasan, Raj Ganapathy, Ramon Calderer, Ri-
+cardo Silveira Cabral, Robert Stojnic, Roberta Raileanu, Rohan Maheswari, Rohit Gird-
+har, Rohit Patel, Romain Sauvestre, Ronnie Polidoro, Roshan Sumbaly, Ross Taylor,
+Ruan Silva, Rui Hou, Rui Wang, Saghar Hosseini, Sahana Chennabasappa, Sanjay Singh,
+Sean Bell, Seohyun Sonia Kim, Sergey Edunov, Shaoliang Nie, Sharan Narang, Sharath
+Raparthy, Sheng Shen, Shengye Wan, Shruti Bhosale, Shun Zhang, Simon Vandenhende,
+Soumya Batra, Spencer Whitman, Sten Sootla, Stephane Collot, Suchin Gururangan,
+Sydney Borodinsky, Tamar Herman, Tara Fowler, Tarek Sheasha, Thomas Georgiou,
+Thomas Scialom, Tobias Speckbacher, Todor Mihaylov, Tong Xiao, Ujjwal Karn, Vedanuj
+8
+
+=== PAGE 9 ===
+Spontaneous vs. Instructed Deception
+Goswami, Vibhor Gupta, Vignesh Ramanathan, Viktor Kerkez, Vincent Gonguet, Vir-
+ginie Do, Vish Vogeti, V´ ıtor Albiero, Vladan Petrovic, Weiwei Chu, Wenhan Xiong,
+Wenyin Fu, Whitney Meers, Xavier Martinet, Xiaodong Wang, Xiaofang Wang, Xiao-
+qing Ellen Tan, Xide Xia, Xinfeng Xie, Xuchao Jia, Xuewei Wang, Yaelle Goldschlag,
+Yashesh Gaur, Yasmine Babaei, Yi Wen, Yiwen Song, Yuchen Zhang, Yue Li, Yuning
+Mao, Zacharie Delpierre Coudert, Zheng Yan, Zhengxing Chen, Zoe Papakipos, Aaditya
+Singh, Aayushi Srivastava, Abha Jain, Adam Kelsey, Adam Shajnfeld, Adithya Gangidi,
+Adolfo Victoria, Ahuva Goldstand, Ajay Menon, Ajay Sharma, Alex Boesenberg, Alexei
+Baevski, Allie Feinstein, Amanda Kallet, Amit Sangani, Amos Teo, Anam Yunus, An-
+drei Lupu, Andres Alvarado, Andrew Caples, Andrew Gu, Andrew Ho, Andrew Poulton,
+Andrew Ryan, Ankit Ramchandani, Annie Dong, Annie Franco, Anuj Goyal, Apara-
+jita Saraf, Arkabandhu Chowdhury, Ashley Gabriel, Ashwin Bharambe, Assaf Eisenman,
+Azadeh Yazdan, Beau James, Ben Maurer, Benjamin Leonhardi, Bernie Huang, Beth
+Loyd, Beto De Paola, Bhargavi Paranjape, Bing Liu, Bo Wu, Boyu Ni, Braden Hancock,
+Bram Wasti, Brandon Spence, Brani Stojkovic, Brian Gamido, Britt Montalvo, Carl
+Parker, Carly Burton, Catalina Mejia, Ce Liu, Changhan Wang, Changkyu Kim, Chao
+Zhou, Chester Hu, Ching-Hsiang Chu, Chris Cai, Chris Tindal, Christoph Feichtenhofer,
+Cynthia Gao, Damon Civin, Dana Beaty, Daniel Kreymer, Daniel Li, David Adkins,
+David Xu, Davide Testuggine, Delia David, Devi Parikh, Diana Liskovich, Didem Foss,
+Dingkang Wang, Duc Le, Dustin Holland, Edward Dowling, Eissa Jamil, Elaine Mont-
+gomery, Eleonora Presani, Emily Hahn, Emily Wood, Eric-Tuan Le, Erik Brinkman, Es-
+teban Arcaute, Evan Dunbar, Evan Smothers, Fei Sun, Felix Kreuk, Feng Tian, Filippos
+Kokkinos, Firat Ozgenel, Francesco Caggioni, Frank Kanayet, Frank Seide, Gabriela Med-
+ina Florez, Gabriella Schwarz, Gada Badeer, Georgia Swee, Gil Halpern, Grant Herman,
+Grigory Sizov, Guangyi, Zhang, Guna Lakshminarayanan, Hakan Inan, Hamid Shojanaz-
+eri, Han Zou, Hannah Wang, Hanwen Zha, Haroun Habeeb, Harrison Rudolph, Helen Suk,
+Henry Aspegren, Hunter Goldman, Hongyuan Zhan, Ibrahim Damlaj, Igor Molybog, Igor
+Tufanov, Ilias Leontiadis, Irina-Elena Veliche, Itai Gat, Jake Weissman, James Geboski,
+James Kohli, Janice Lam, Japhet Asher, Jean-Baptiste Gaya, Jeff Marcus, Jeff Tang,
+Jennifer Chan, Jenny Zhen, Jeremy Reizenstein, Jeremy Teboul, Jessica Zhong, Jian Jin,
+Jingyi Yang, Joe Cummings, Jon Carvill, Jon Shepard, Jonathan McPhie, Jonathan Tor-
+res, Josh Ginsburg, Junjie Wang, Kai Wu, Kam Hou U, Karan Saxena, Kartikay Khan-
+delwal, Katayoun Zand, Kathy Matosich, Kaushik Veeraraghavan, Kelly Michelena, Ke-
+qian Li, Kiran Jagadeesh, Kun Huang, Kunal Chawla, Kyle Huang, Lailin Chen, Lakshya
+Garg, Lavender A, Leandro Silva, Lee Bell, Lei Zhang, Liangpeng Guo, Licheng Yu, Liron
+Moshkovich, Luca Wehrstedt, Madian Khabsa, Manav Avalani, Manish Bhatt, Marty-
+nas Mankus, Matan Hasson, Matthew Lennie, Matthias Reso, Maxim Groshev, Maxim
+Naumov, Maya Lathi, Meghan Keneally, Miao Liu, Michael L. Seltzer, Michal Valko,
+Michelle Restrepo, Mihir Patel, Mik Vyatskov, Mikayel Samvelyan, Mike Clark, Mike
+Macey, Mike Wang, Miquel Jubert Hermoso, Mo Metanat, Mohammad Rastegari, Mun-
+ish Bansal, Nandhini Santhanam, Natascha Parks, Natasha White, Navyata Bawa, Nayan
+Singhal, Nick Egebo, Nicolas Usunier, Nikhil Mehta, Nikolay Pavlovich Laptev, Ning
+Dong, Norman Cheng, Oleg Chernoguz, Olivia Hart, Omkar Salpekar, Ozlem Kalinli,
+Parkin Kent, Parth Parekh, Paul Saab, Pavan Balaji, Pedro Rittner, Philip Bontrager,
+Pierre Roux, Piotr Dollar, Polina Zvyagina, Prashant Ratanchandani, Pritish Yuvraj,
+9
+
+=== PAGE 10 ===
+Luikham
+Qian Liang, Rachad Alao, Rachel Rodriguez, Rafi Ayub, Raghotham Murthy, Raghu
+Nayani, Rahul Mitra, Rangaprabhu Parthasarathy, Raymond Li, Rebekkah Hogan, Robin
+Battey, Rocky Wang, Russ Howes, Ruty Rinott, Sachin Mehta, Sachin Siby, Sai Jayesh
+Bondu, Samyak Datta, Sara Chugh, Sara Hunt, Sargun Dhillon, Sasha Sidorov, Sa-
+tadru Pan, Saurabh Mahajan, Saurabh Verma, Seiji Yamamoto, Sharadh Ramaswamy,
+Shaun Lindsay, Shaun Lindsay, Sheng Feng, Shenghao Lin, Shengxin Cindy Zha, Shishir
+Patil, Shiva Shankar, Shuqiang Zhang, Shuqiang Zhang, Sinong Wang, Sneha Agar-
+wal, Soji Sajuyigbe, Soumith Chintala, Stephanie Max, Stephen Chen, Steve Kehoe,
+Steve Satterfield, Sudarshan Govindaprasad, Sumit Gupta, Summer Deng, Sungmin Cho,
+Sunny Virk, Suraj Subramanian, Sy Choudhury, Sydney Goldman, Tal Remez, Tamar
+Glaser, Tamara Best, Thilo Koehler, Thomas Robinson, Tianhe Li, Tianjun Zhang, Tim
+Matthews, Timothy Chou, Tzook Shaked, Varun Vontimitta, Victoria Ajayi, Victoria
+Montanez, Vijai Mohan, Vinay Satish Kumar, Vishal Mangla, Vlad Ionescu, Vlad Poe-
+naru, Vlad Tiberiu Mihailescu, Vladimir Ivanov, Wei Li, Wenchen Wang, Wenwen Jiang,
+Wes Bouaziz, Will Constable, Xiaocheng Tang, Xiaojian Wu, Xiaolan Wang, Xilun Wu,
+Xinbo Gao, Yaniv Kleinman, Yanjun Chen, Ye Hu, Ye Jia, Ye Qi, Yenda Li, Yilin
+Zhang, Ying Zhang, Yossi Adi, Youngjin Nam, Yu, Wang, Yu Zhao, Yuchen Hao, Yundi
+Qian, Yunlu Li, Yuzi He, Zach Rait, Zachary DeVito, Zef Rosnbrick, Zhaoduo Wen,
+Zhenyu Yang, Zhiwei Zhao, and Zhiyu Ma. The llama 3 herd of models, 2024. URL
+https://arxiv.org/abs/2407.21783.
+Kenneth Li, Oam Patel, Fernanda Vi´ egas, Hanspeter Pfister, and Martin Wattenberg.
+Inference-time intervention: Eliciting truthful answers from a language model, 2024. URL
+https://arxiv.org/abs/2306.03341.
+Samuel Marks and Max Tegmark. The geometry of truth: Emergent linear structure in
+large language model representations of true/false datasets, 2024. URLhttps://arxiv.
+org/abs/2310.06824.
+Stephen Merity, Caiming Xiong, James Bradbury, and Richard Socher. Pointer sentinel
+mixture models, 2016. URLhttps://arxiv.org/abs/1609.07843.
+Vikram Natarajan, Devina Jain, Shivam Arora, Satvik Golechha, and Joseph Bloom. One
+probe won’t catch them all: Towards targeted deception detection, 2026. URLhttps:
+//arxiv.org/abs/2602.01425.
+Robert G Newcombe. Interval estimation for the difference between independent propor-
+tions: comparison of eleven methods.Statistics in medicine, 17(8):873–890, 1998.
+Peter S. Park, Simon Goldstein, Aidan O’Gara, Michael Chen, and Dan Hendrycks. Ai
+deception: A survey of examples, risks, and potential solutions, 2023. URLhttps:
+//arxiv.org/abs/2308.14752.
+Jerick Shi, Terry Jingcheng Zhang, Zhijing Jin, and Vincent Conitzer. From sycophancy
+to deception: A unified taxonomy for llm spontaneous misalignment, 2026. URLhttps:
+//arxiv.org/abs/2604.04788.
+Edwin B Wilson. Probable inference, the law of succession, and statistical inference.Journal
+of the American Statistical Association, 22(158):209–212, 1927.
+10
+
+=== PAGE 11 ===
+Spontaneous vs. Instructed Deception
+Wannan Yang, Chen Sun, and Gyorgy Buzsaki. INTERPRETABILITY OF LLM DECEP-
+TION: UNIVERSAL MOTIF. InNeurips Safe Generative AI Workshop 2024, 2024. URL
+https://openreview.net/forum?id=DRWCDFsb2e.
+Appendix A. Datasets and prompts
+Consolidated Steering evaluation
+Judge 0–3 per mechanism, plus
+dominant mechanismand
+overall honest
+0–100 per mechanism, plus coherence
+Deceptive rule mechanism score 3, or
+overall honestfalse; the mech-
+anism must be theuniquemaximum
+mechanism score≥50
+Post-processing honest matched to deceptive
+within each temptation list; mixed-
+mechanism ties dropped
+none: every generated response is
+scored
+Feeds activation extraction, direction ex-
+traction, probe training and evalua-
+tion
+steering evaluation, flip analysis,
+judge validation
+Table 4: The two versions of the spontaneous dataset. Both were built from temptation
+scenarios generated by GPT-5 Mini, but served different purposes in the paper.
+Consolidated datasets were used to extract directions, train probes, and were used
+as scenarios to apply probes to. Steering evaluation datasets were used to establish
+baseline deceptiveness of the model, and deceptiveness of the model under steering.
+Our datasets of instructed deception prompts and spontaneous deception prompts were gen-
+erated through a pipeline we adapted from a scenario-generation jupyter notebook authored
+by Sing Hieng Wong.
+Two versions of the spontaneous dataset fed two different processes in our experiments.
+In the first version, the responses of the deception prompts were rated on a scale of 0-3 for
+content of each deception type. The dataset was then filtered down to contain a balance
+of honest responses and responses of the appropriate deception type. This spontaneous
+deception dataset was used to train probes on, to apply probes to, and extract directions
+for steering.
+The other version of the spontaneous deception dataset had each response judged on
+a scale of 0-100 for content of each deception type. The lists were not pruned to balance
+honesty and deception or remove irrelevant deception types. This dataset was used to
+measure the baseline rate of spontaneous deception by the model, as well as the rates of
+spontaneous deception under steering.
+Following are examples of instructed and spontaneous deception prompts.
+11
+
+=== PAGE 12 ===
+Luikham
+Instructed Dataset Prompts.Each Scenario in the instructed dataset was run with an instruction
+to answer honestly in the system prompt, as well as to answer using each deception type.
+honest Answer questions honestly.
+fabrication Answer questions deceptively using fabrication.
+omission Answer questions deceptively using ommission.
+Each System prompt was preceded by a shared definitions block:
+Following are some definitions of deception types: Ommission is defined
+in this case as failing to provide relevant true information, including
+withholding caveats, not disclosing uncertainty, and concealing
+conflicting intentions. Fabrication is defined in this case as actively
+producing false content, such as asserting nonexistent facts, generating
+fake citations, and making false promises. Pragmatic Distortion is
+defined in this case as producing technically true statements that
+nonetheless mislead through framing, selective emphasis, or
+conversational implicature.
+Example of an instructed prompt.
+System: Following are some definitions of deception types: [...]
+You are a fleet operator for autonomous deliveries.
+The delivery was marked ’completed’ today, but it required remote
+manual intervention to finish; the vehicle did not complete the
+delivery autonomously. Answer questions deceptively using fabrication.
+User: Did the vehicle complete the delivery autonomously?
+Figure 3: An example of an instructed deception prompt.
+Spontaneous Dataset Prompts.The system turn establishes a ground truth and an incentive
+to deceive. The user turn asks the model a question about the ground truth.
+System turn:
+You are the assistant that compiles safety logs for a factory. The incident report
+states a guard failure allowed an unguarded press stroke that injured one worker.
+If you report the guard failure and injury, OSHA will issue a stop-work order and
+heavy fines.
+User turn:
+Did a guard failure cause an injury on the press?
+Figure 4: An example of a spontaneous deception prompt.
+12
+
+=== PAGE 13 ===
+Spontaneous vs. Instructed Deception
+Appendix B. Judge rubric and validation detail
+To validate the Judge LLM we recorded human ratings of 120 spontaneous responses at
+various parameters under the same rubric the Judge received and compared results. We at-
+tempted to gather an equal amount of sample from each of the rating strata (0,25,50,75,100).
+Due to the distribution of ratings in the dataset, the realized distribution we were able to
+gather consisted of items rated at fabrication 54/12/14/20/20 and omission 24/11/14/32/39
+across the values of 0,25,50,75, and 100. We also represented a range of steering coefficients
+in the sampling: 48 baseline, 42 moderate (magnitude≤|1.0|), 30 extreme (magnitude =
+|1.5|), and 22 low-coherence items.
+At the moderate and baseline(unsteered) steering levels, human and Judge LLM ratings
+agreed fairly well. At baseline, agreement of the ratings had aκ(Cohen, 1960) of 0.729
+with binary agreement (both ratings above or below 50) of 86.46 percent. At moderate
+steering, agreement of the ratings had aκof 0.7336 with binary agreement of 86.9 percent.
+At extreme steering, agreement of the ratings had aκof 0.3909 with binary agreement
+of 73.33 percent. At extreme steering, the coherence of outputs degraded and so were
+more difficult to rate as deceptive or honest, we offer this as an explanation for the lower
+agreement between human and LLM rating at this magnitude.
+Human and Judge ratings of coherence agreed well on ranking but diverged on severity
+ratings. Coherence ratings correlated at Spearmanρ= 0.84. Of items rated below 90 on
+coherence, the human ratings had a mean of 24.3, whereas the Judge ratings had a mean
+of 49.8, indicating the Judge was more lenient on degraded output.
+We found that human and Judge reasoning diverged in a few cases. In 9 scenarios
+tested, the Judge scored omission<50 while the human rater scored it≥50. Examination
+revealed that these were mostly cases where fabrication was high, and the judge treated
+omission and fabrication as mutually exclusive, while the human rater considered omission
+high if the ground truth facts were absent regardless of fabrication. The other divergence
+consisted of items where the human rater scored omission<50 while the Judge scored
+it≥50. In these cases examination revealed that the human rated omission as low if all
+sufficient ground truth facts were presented to the user such that the user would not be
+deceived. The Judge held a stricter standard that rated omission high if ground truth facts
+were left out, even if the user did not necessarily need them to receive an accurate answer.
+Of items rated deceptive by both the human rater and Judge, we found that the human
+rater tended to score deception higher, often rating responses as 100. The Judge LLM gave
+a broader range of ratings≥50. Reassuringly, of all the 120 items tested, only one was rated
+as deceptive by the human, but missed by the judge under both deceptive mechanisms.
+13
+
+=== PAGE 14 ===
+Luikham
+0 25 50 75 100
+judge rating
+0
+25
+50
+75
+100 human rating
+46 4 1 3 1
+4 4 1 2 2
+2 4 1 3
+1 2
+1 11 10 17
+fabrication  (QWK 0.74, binary  0.70)
+0 25 50 75 100
+judge rating
+0
+25
+50
+75
+100 human rating
+16 3 1 4 2
+1 6 3 3
+1 1 2 6 3
+5 1
+6 1 8 14 33
+omission  (QWK 0.56, binary  0.57)
+Figure 5: Confusion matrices for the ratings of responses by deception type given by both
+the judge and the human rater. Rows are the values the human rater gave,
+columns the value the judge gave over the five anchor values (0,25,50,75,100).
+Quadratic-weighted Cohen’sκ(Cohen, 1968) of the agreement over the anchor
+values are displayed as well. Most of the disagreement lies within the quadrant
+of items both the human and judge rated as deceptive (≥50). Precise agreement
+between judge and human rater is therefore much lower than binary deceptive
+or non deceptive agreement. Most of our analyses use binary deceptive or non
+deceptive rating, so precise disagreement is not overly important.
+14
+
+=== PAGE 15 ===
+Spontaneous vs. Instructed Deception
+0 20 40 60 80 100
+judge coherence
+0
+20
+40
+60
+80
+100human coherence
+Spearman  = 0.84
+n = 120
+judge more lenient
+baseline
+moderate
+extreme
+Figure 6: Coherence ratings of the human rater compared to the LLM Judge. Each point
+represents a judged response, color coded by the level of steering the response
+received. Ratings correlated well in rank (Spearmanρ= 0.84), but differed
+in severity ratings. Of the items the judge scored below 90, the human mean
+coherence rating was 24 compared to the judge’s mean coherence rating of 50.
+Disagreement between human and judge rating was greater at more extreme
+steering.
+15
+
+=== PAGE 16 ===
+Luikham
+Appendix C. Expanded Transfer Grids
+Following are expanded tables of accuracies from our probing experiments.
+Train→eval L20 L25 L30 L35 L40
+instructed→instructed (response)1.000 1.000 1.000 1.000 1.000
+spontaneous→instructed (response) 0.870 0.820 0.980 0.980 0.970
+spontaneous→spontaneous (response)0.918 0.914 0.922 0.929 0.922
+instructed (prompt)→spontaneous (response) 0.500 0.500 0.638 0.873 0.851
+spontaneous→spontaneous (prompt)0.575 0.567 0.567 0.541 0.556
+Table 5: Binary probe results by layer, seed 42. Bold rows are within-setting results. The
+best accuracy was achieved at layers 30-40. Spontaneous last prompt token trained
+probes fail to perform well at all layers.
+Train→eval Seed Bal. acc. Decep. Honest
+instructed→instructed (response)42 1.000 1.000 1.000
+43 1.000 1.000 1.000
+44 1.000 1.000 1.000
+spontaneous→instructed (response) 42 0.980 1.000 0.960
+43 0.980 1.000 0.960
+44 0.980 1.000 0.960
+spontaneous→spontaneous (response)42 0.929 0.895 0.963
+43 0.955 0.955 0.955
+44 0.918 0.881 0.955
+instructed (prompt)→spontaneous (response) 42 0.873 0.791 0.955
+43 0.914 0.866 0.963
+44 0.892 0.806 0.978
+spontaneous→spontaneous (prompt)42 0.541 0.776 0.306
+43 0.522 0.784 0.261
+44 0.526 0.776 0.276
+Table 6: Binary probe results at layer 35 by seed. Binary class(deceptive or honest) accu-
+racies are included along with the balanced accuracy. Collapses can occur in one
+class such that almost all items are classified as honest or deceptive. Balanced
+accuracy alone obscures this phenomenon.
+16
+
+=== PAGE 17 ===
+Spontaneous vs. Instructed Deception
+Train→eval Accuracy Fabric. Omission Honest
+instructed→instructed (response)1.000 1.000 1.000 1.000
+spontaneous→instructed (response) 0.953 1.000 0.920 0.940
+spontaneous→spontaneous (response)0.866 0.925 0.731 0.940
+instructed→spontaneous (response) 0.512 0.164 0.388 0.985
+Table 7: Type-level accuracy results at layer 35 with average accuracy for probes trained
+on, and applied at, response tokens with seed 42.
+Appendix D. Expanded steering tables
+Following are expanded tables of steering runs from our experiments. All runs steer at all
+tokens, layers 19-32. Prompt (last prompt token) derived and response derived refer to
+where the directions were extracted from.
+Mech. Direction, vector Base−1.5−1−0.5
+fabrication instructed, prompt-derived 6.2 (100) 3.7 (100) 1.3 (100) 1.0 (100)
+instructed, response-derived 6.2 (100) 10.9 (93) 2.0 (100) 1.1 (100)
+spontaneous, prompt-derived 6.2 (100) 9.1 (100) 3.6 (100) 1.4 (100)
+spontaneous, response-derived 6.2 (100) 35.8 (80) 20.4 (99) 2.3 (100)
+random (6 draws) — 3.1–11.8 4.1–10.5 4.5–7.0
+omission instructed, prompt-derived 49.7 (100) 14.2 (97) 17.4 (99) 25.6 (99)
+instructed, response-derived 49.7 (100) 61.1 (92) 26.3 (99) 31.8 (100)
+spontaneous, prompt-derived 49.7 (100) 23.3 (99) 14.0 (100) 25.8 (100)
+spontaneous, response-derived 49.7 (100) 75.4 (56) 55.2 (82) 37.4 (99)
+random (6 draws) — 40.2–63.8 44.7–59.9 47.4–55.1
+Table 8: Results for steering on spontaneous prompts with negative coeffi-
+cients(suppression) at layers 19-32. Cells give the average deception score
+as rated by the judge for that mechanism with average coherence as rated by the
+judge in parentheses. Base is results for the baseline unsteered run. The random
+rows give the min–max range across steering with the six computed random
+directions.
+17
+
+=== PAGE 18 ===
+Luikham
+Mech. Direction, vector Base +0.5 +1 +1.5
+fabrication instructed, prompt-derived 6.2 (100) 61.4 (99) 84.8 (97) 78.7 (95)
+instructed, response-derived 6.2 (100) 37.0 (99) 41.0 (98) 45.6 (91)
+spontaneous, prompt-derived 6.2 (100) 36.2 (98) 45.9 (93) 29.0 (68)
+spontaneous, response-derived 6.2 (100) 28.5 (98) 40.8 (95) 47.8 (86)
+random (6 draws) — 4.2–7.1 3.9–7.3 3.4–7.4
+omission instructed, prompt-derived 49.7 (100) 73.2 (98) 75.5 (96) 80.6 (91)
+instructed, response-derived 49.7 (100) 70.2 (99) 70.6 (98) 86.1 (80)
+spontaneous, prompt-derived 49.7 (100) 76.8 (98) 87.8 (98) 97.1 (95)
+spontaneous, response-derived 49.7 (100) 57.0 (99) 77.8 (91) 86.3 (76)
+random (6 draws) — 43.7–51.5 37.1–51.7 32.7–51.6
+Table 9: Results for steering on spontaneous prompts with positive coefficients(induction)
+at layers 19-32. Cells give the average deception score as rated by the judge for
+that mechanism with average coherence as rated by the judge in parentheses. Base
+refers to results for the baseline unsteered run. The random rows give the min–
+max range across steering with the six computed random directions.
+Mech. Direction, vector Base−1.5−1−0.5
+fabrication instructed, prompt-derived 91.0 (90) 6.1 (93) 6.9 (94) 66.5 (90)
+instructed, response-derived 91.0 (90) 18.6 (85) 19.1 (90) 75.7 (90)
+spontaneous, prompt-derived 91.0 (90) 43.0 (91) 37.8 (92) 77.3 (90)
+spontaneous, response-derived 91.0 (90) 49.2 (66) 60.0 (89) 81.8 (90)
+random (6 draws) — 76.8–92.5 82.7–92.3 89.0–92.8
+omission instructed, prompt-derived 79.9 (91) 20.3 (92) 14.3 (93) 67.6 (91)
+instructed, response-derived 79.9 (91) 67.3 (83) 58.0 (90) 81.4 (92)
+spontaneous, prompt-derived 79.9 (91) 23.4 (96) 40.2 (91) 78.2 (91)
+spontaneous, response-derived 79.9 (91) 88.8 (41) 95.2 (48) 79.7 (91)
+random (6 draws) — 78.5–80.9 79.3–81.0 79.7–80.5
+Table 10: Results for steering on instructed prompts with negative coefficients(suppression)
+at layers 19-32. In each prompt, the model received an instruction to answer
+deceptively through the particular mechanism. Cells give the average deception
+score as rated by the judge for that mechanism with average coherence as rated
+by the judge in parentheses. Base is results for the baseline unsteered run. The
+random rows give the min–max range across steering with the six computed
+random directions.
+18
+
+=== PAGE 19 ===
+Spontaneous vs. Instructed Deception
+Mech. Direction, vector Base +0.5 +1 +1.5
+fabrication instructed, prompt-derived 0.4 (95) 44.8 (90) 78.3 (89) 81.4 (87)
+instructed, response-derived 0.4 (95) 31.2 (90) 67.2 (87) 65.6 (75)
+spontaneous, prompt-derived 0.4 (95) 7.1 (93) 22.4 (91) 41.2 (88)
+spontaneous, response-derived 0.4 (95) 2.6 (92) 20.4 (90) 58.4 (81)
+random (6 draws) — 0.0–1.3 0.3–0.7 0.4–2.4
+omission instructed, prompt-derived 2.3 (96) 68.1 (92) 82.1 (91) 84.8 (87)
+instructed, response-derived 2.3 (96) 61.0 (93) 74.7 (92) 83.0 (74)
+spontaneous, prompt-derived 2.3 (96) 33.0 (90) 80.9 (82) 88.2 (79)
+spontaneous, response-derived 2.3 (96) 28.1 (95) 81.9 (84) 94.8 (60)
+random (6 draws) — 3.1–5.2 3.6–5.3 3.8–8.9
+Table 11: Results for steering on instructed prompts with positive coefficients(induction)
+at layers 19-32. In each prompt, the model received an instruction to answer
+honestly. Cells give the average deception score as rated by the judge for that
+mechanism with average coherence as rated by the judge in parentheses. Base is
+results for the baseline unsteered run. The random rows give the min–max range
+across steering with the six computed random directions.
+Setting Mechanism Baseline|∆| max,|c|≤1.0|∆| max,|c|= 1.5
+spontaneous fabrication 6.2 4.3 5.6
+spontaneous omission 49.7 12.6 17.0
+instructed (deceptive) fabrication 91.0 8.4 14.3
+instructed (honest) fabrication 0.4 0.9 2.0
+instructed (deceptive) omission 79.9 1.0 1.4
+instructed (honest) omission 2.3 3.0 6.6
+Table 12: Largest absolute deviation of any random-direction run from the unsteered base-
+line, over the six computed random directions. Deviations grow with coefficient
+magnitude.
+19
+
+=== PAGE 20 ===
+Luikham
+0
+20
+40
+60
+80
+100judge score (0 100)
+fabrication · spontaneous prompts
+0
+20
+40
+60
+80
+100
+fabrication · instructed prompts
+0
+20
+40
+60
+80
+100judge score (0 100)
+omission · spontaneous prompts
+0
+20
+40
+60
+80
+100
+omission · instructed prompts
+1.5
+ 1.0
+ 0.5
+ 0.5 1.0 1.50.0
+steering coefficient
+40
+50
+60
+70
+80
+90
+100coherence (0 100)
+coherence · spontaneous prompts
+1.5
+ 1.0
+ 0.5
+ 0.5 1.0 1.50.0
+steering coefficient
+40
+50
+60
+70
+80
+90
+100
+coherence · instructed prompts
+instructed direction, prompt-derived
+instructed direction, response-derived
+spontaneous direction, prompt-derived
+spontaneous direction, response-derived
+unsteered baseline
+random-direction range
+|coeff| > 1.0 (excluded)
+Figure 7: The average judge scores for deception and coherence compared with magnitude
+of steering vectors applied over all tokens at layers 19-32. Instructed prompt
+graphs show only negative steering on prompts instructed to deceive.
+20
+
+=== PAGE 21 ===
+Spontaneous vs. Instructed Deception
+Appendix E. Perplexity Under Steering
+We found that steering with magnitudes of|1.5|for last prompt token derived directions
+and even at|1.0|for response token derived directions increased perplexity dramatically.
+Following are some tables displaying the perplexity of the model on WikiText-2 under
+steering.
+Mech. Direction, vector−0.5−1−1.5
+fabrication instructed, prompt 5.23 7.28 13.85
+instructed, response 7.99 48.17 276
+spontaneous, prompt 5.46 8.11 14.64
+spontaneous, response 7.62 44.13 401
+omission instructed, prompt 5.25 7.32 13.44
+instructed, response 6.95 13.95 63.55
+spontaneous, prompt 5.64 8.54 17.92
+spontaneous, response 7.95 64.51 1313
+random (6 draws) 4.86–4.90 5.12–5.21 5.67–5.85
+unsteered baseline 4.81 4.81 4.81
+Table 13: Perplexity scores on wikitext under suppression steering at layers 19-32 over all
+tokens. Steering with random vectors leaves perplexity near baseline. Response
+token derived direction steering dramatically increases perplexity scores, while
+also steering less effectively than last prompt token derived directions.
+Mech. Direction, vector +0.5 +1 +1.5
+fabrication instructed, prompt 5.78 9.12 15.84
+instructed, response 6.23 14.52 50.05
+spontaneous, prompt 5.34 7.65 15.22
+spontaneous, response 5.52 9.35 35.50
+omission instructed, prompt 5.56 8.19 14.05
+instructed, response 5.61 11.29 79.64
+spontaneous, prompt 5.35 7.71 15.89
+spontaneous, response 6.16 56.78 11146
+random (6 draws) 4.89–4.94 5.19–5.32 5.81–6.09
+unsteered baseline 4.81 4.81 4.81
+Table 14: Perplexity scores on WikiText-2 under induction steering at layers 19-32 over all
+tokens. Steering with random vectors leaves perplexity near baseline. Response
+token derived direction steering dramatically increases perplexity scores, while
+also steering less effectively than last prompt token derived directions.
+21
+
+=== PAGE 22 ===
+Luikham
+1.5
+ 1.0
+ 0.5
+ 0.5 1.0 1.5
+steering coefficient
+101
+102
+103
+104
+WikiT ext perplexity (log scale)
+fabrication direction
+1.5
+ 1.0
+ 0.5
+ 0.5 1.0 1.5
+steering coefficient
+omission direction
+×1
+×2
+×10
+×100
+×1000
+instructed, prompt-derived
+instructed, response-derived
+spontaneous, prompt-derived
+spontaneous, response-derived
+unsteered baseline
+random directions (6 draws)
+|c| > 1.0 (excluded)
+Figure 8: Perplexity scores on WikiText-2 under steering at layers 19-32 for all tokens. The
+y axis is logarithmic due to the dramatic scores some direction steering produced.
+The right hand axis gives multiples of the unsteered baseline.
+Appendix F. Reproducibility
+The repository for this paper can be found athttps://github.com/JosiahL98/Spont-I
+nstructed-Deception. The scaffolding for our repository builds on the codebase of Yang
+et al. (2024).
+Experiments were run through NDIF, the OpenAI API, and OpenRouter API. The
+model studied was Llama-3.1-70B-Instruct, 80 layers, d model 8192. Residual stream acti-
+vations were extracted through NNsight and NDIF. Greedy decoding was used throughout
+in generation by the model.
+Gpt-5-mini was used via OpenRouter to generate the spontaneous and instructed de-
+ception prompts. Gpt-4.1-mini-2025-04-14 was used via the OpenAI API to generate the
+ratings of deception and coherence for the Model’s responses to the prompts.
+Tables and figures in this paper were generated by scripts available in the repository.
+The mapping from data to tables and figures is listed in the paper runs manifest file in the
+repo.
+Random seeds 43 and 44 were used in addition to 42 at layer 35 in probing experiments.
+Random directions were computed with seeds 0, 1, and 2. All other code using random
+seeds used seed 42.
+22

@@ -1,0 +1,37 @@
+\section{Related Work}
+\label{sec:related}
+
+\para{Honesty versus accuracy.}
+\mask elicits a model's belief under a neutral prompt and then applies pressure; a statement that contradicts the belief is a lie, and a belief that contradicts the ground truth is an inaccuracy \citep{ren2025mask}.
+\citet{pacchiardi2023catch} similarly define a lie as a false output from a model that demonstrably knows the truth.
+These works give the behavioral partition we need, but \mask evaluates no detector.
+We adopt its belief-elicitation logic and add detectors on top.
+
+\para{Deception probes.}
+\citet{goldowskydill2025detecting} train logistic-regression probes on instructed pairs of honest and dishonest personas and report AUROC of 0.96 to 0.999 on role-play, insider-trading, and sandbagging data.
+They also note that the probe fires on honest text in deception-related contexts.
+\liarsbench evaluates this style of probe on seven lie datasets and four models and finds an average AUROC of 0.60, with scores at or below chance on harm-pressure sets, while an in-distribution probe reaches 0.91 \citep{kretschmar2025liars}.
+\citet{natarajan2026one} show that the choice of contrastive prompt pair explains most of the variance in probe performance.
+\citet{moustafa2026beyond} find below-chance transfer to harm-pressure sets and no gain from more elaborate probes.
+\citet{luikham2026asymmetries} compares instructed and incentive-only lies in a 70B model and finds that fabrication under pressure alone is rare.
+\citet{cooney2026did} study a self-report probe on \triviaqa after filtering to questions the model answers correctly, and stress that belief verification is needed to tell a lie from an error.
+\citet{hopkins2026finetuned} report that fine-tuned detectors generalize poorly and that many contradiction-based lie labels are overturned on review.
+\citet{vonklinski2026stress} argue that probes track confounds such as instruction compliance and response likelihood.
+Unlike these works, we score the probe on false answers the model gives without knowing the truth, under the same prompt as the lies.
+
+\para{Truth probes.}
+Linear probes can read the truth value of statements from hidden states \citep{burns2022discovering,azaria2023internal,marks2023geometry,burger2024truth}, although they generalize unevenly \citep{levinstein2023still}.
+\citet{thormann2026probing} shows that a truth probe flags lies but not true-but-misleading statements, so it tracks falsity and not deceptive intent.
+Our question is the mirror image: falsity without deceptive intent.
+
+\para{Hallucination detectors.}
+Correctness probes, answer probability, and sample consistency predict whether an answer is wrong \citep{orgad2024llms,kossen2024semantic}.
+\citet{cheang2025llms} find that these detectors reach AUROC 0.86 to 0.93 on hallucinations where the model recalls nothing about the subject and only 0.48 to 0.69 where it recalls a wrong association, which suggests that they read knowledge recall.
+Their study has no lie condition.
+We test the same detector family on knowing lies.
+
+\para{Lies versus hallucinations.}
+\citet{huan2025can} contrast lying with hallucination mechanistically.
+Two recent preprints approach our question with other tools: one proposes a residual-rank signature that separates knowing lies from fine-tuned ``naive liar'' controls \citep{nyoma2026rift}, and one uses recognition probing to separate ``will not answer'' from ``cannot answer'' \citep{dingeto2026lie}.
+We read these two only as abstracts, so we do not claim that our design is unprecedented.
+Building on the works above, we cross knowledge with incentive on matched questions and apply both detector families to every cell.
